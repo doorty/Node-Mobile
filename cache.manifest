@@ -1,0 +1,16 @@
+CACHE MANIFEST
+# the above line is required
+
+# 4-25-2011 9:00 PM
+
+# Switches to the explicit section.
+CACHE:
+/index.html
+/screen.css
+/client.js
+
+# Switches to the fallback section.
+# FALLBACK:
+
+# Switches to the online whitelist section.
+# NETWORK:
