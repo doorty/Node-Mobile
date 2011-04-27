@@ -1,7 +1,12 @@
+var context;
+
 var board = {
   width: 320,
   height: 460
 }
+
+// use for multiple pieces via networkd
+var pieces = [];
 
 var piece = {
 	center: {
@@ -14,18 +19,38 @@ var piece = {
 	color: '#000'
 };
 
-$(document).ready(function() {
-  var board = document.getElementById('board');
-  var context = board.getContext('2d');
-  window.addEventListener('devicemotion', function(event) {
-    var accel = event.accelerationIncludingGravity;
-    piece.center = computeCenter(piece.center, accel);
-    drawBoard(context);
-    drawPiece(context, piece);
-  }, true);
+window.addEventListener('load', function() { 
+  
+  var canvas = document.getElementById('canvas');
+  context = canvas.getContext('2d');
+
+  // socket connection with server. 
+  // iOS > 4.2 uses WebSocket, iOS < 4.2 uses long polling
+  var socket = new io.Socket('10.0.1.2', { port: 3000 }); 
+  socket.connect();
+  socket.on('connect', function() { 
+    console.log('connected');
+  }); 
+  socket.on('message', function(message) { 
+    console.log('message: ' + message);
+    
+  }); 
+  socket.on('disconnect', function() { 
+    console.log('disconnected');
+  });
+  
+  window.addEventListener('devicemotion', deviceMotion(event), true);
+
 });
 
-function drawBoard(context) {
+var deviceMotion = function(event) {
+  var accel = event.accelerationIncludingGravity;
+  drawBoard();
+  piece.center = computeCenter(piece.center, accel);
+  drawPiece(piece);
+}
+
+function drawBoard() {
    context.clearRect(0, 0, board.width, board.height);
    for (var x = 0.5; x < board.width; x += 10) {
        context.moveTo(x, 0);
@@ -39,7 +64,7 @@ function drawBoard(context) {
    context.stroke();
 }
 
-function drawPiece(context, piece) {
+function drawPiece(piece) {
    context.fillStyle = piece.color;
    context.beginPath();
    context.arc(piece.center.x, piece.center.y, piece.radius, 0, Math.PI * 2, false);

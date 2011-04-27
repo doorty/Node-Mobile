@@ -1,7 +1,7 @@
 var http = require('http'),
 	url = require('url'),
 	fs = require('fs'),
-	sys = require('sys');
+	io = require('socket.io');
 	
 // the HTTP server
 var server = http.createServer(function(req, res) {
@@ -35,4 +35,20 @@ function contentType(path) {
 };
 
 server.listen(3000);
-console.log("HTTP server running...")
+
+
+// socket.io
+var socket = io.listen(server);
+socket.on('connection', function(client) { 
+
+  // new client is here
+  client.send(client.sessionId);
+  
+  client.on('message', function() { 
+    
+  });
+  
+  client.on('disconnect', function() { 
+    
+  });
+});
