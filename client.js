@@ -1,12 +1,39 @@
+window.addEventListener('load', function() { 
+  
+  /**************************************************************************
+    * init
+    **************************************************************************/
+   var canvas = document.getElementById('canvas');
+   context = canvas.getContext('2d');
+   window.addEventListener('devicemotion', deviceMotion, true);
+  
+  /**************************************************************************
+   * socket connection with server. 
+   * iOS > 4.2 uses WebSocket, iOS < 4.2 uses long polling
+   **************************************************************************/
+  var socket = new io.Socket('10.0.1.2', { port: 3000 }); 
+  socket.connect();
+  socket.on('connect', function() { 
+    console.log('connected');
+  }); 
+  socket.on('message', function(message) { 
+    console.log('message: ' + message);
+  }); 
+  socket.on('disconnect', function() { 
+    console.log('disconnected');
+  });
+
+});
+
+/**************************************************************************
+ * variables 
+ **************************************************************************/
 var context;
 
 var board = {
   width: 320,
   height: 460
-}
-
-// use for multiple pieces via networkd
-var pieces = [];
+};
 
 var piece = {
 	center: {
@@ -19,30 +46,9 @@ var piece = {
 	color: '#000'
 };
 
-window.addEventListener('load', function() { 
-  
-  var canvas = document.getElementById('canvas');
-  context = canvas.getContext('2d');
-
-  // socket connection with server. 
-  // iOS > 4.2 uses WebSocket, iOS < 4.2 uses long polling
-  var socket = new io.Socket('10.0.1.2', { port: 3000 }); 
-  socket.connect();
-  socket.on('connect', function() { 
-    console.log('connected');
-  }); 
-  socket.on('message', function(message) { 
-    console.log('message: ' + message);
-    
-  }); 
-  socket.on('disconnect', function() { 
-    console.log('disconnected');
-  });
-  
-  window.addEventListener('devicemotion', deviceMotion(event), true);
-
-});
-
+/**************************************************************************
+ * functions 
+ **************************************************************************/
 var deviceMotion = function(event) {
   var accel = event.accelerationIncludingGravity;
   drawBoard();
