@@ -5,93 +5,100 @@ var game = function() {
   **************************************************************************/
   var pieces = [];
 
-  var board = {
-    WIDTH: 320,
-    HEIGHT: 460
-  };
-  
-  var BoardPiece = function(sessionId) {
-    this.sessionId = sessionId;
-    this.center = { 
-      x: board.WIDTH / 2,
-      y: 0
-    };
-    this.radius = 32;
-    this.color = '#000';
-  };
-  
-  var piece = new BoardPiece(3);
-
-  /*
-  var piece = {
-  	center: {
-  		x: board.WIDTH / 2,
-  		y: 0,
-  		xShift: 0,
-  		yShift: 0
-  	},
-  	radius: 32,
-  	color: '#000'
-  };
-  */
   
   /**************************************************************************
-  * functions 
+  * Board
   **************************************************************************/
-     
-  
-   
-  var deviceMotion = function(event) {
-    var accel = event.accelerationIncludingGravity;
-    drawBoard();
-    piece.center = computeCenter(piece.center, accel);
-    drawPiece(piece);
-  };
 
-  var drawBoard = function() {
-     context.clearRect(0, 0, board.WIDTH, board.HEIGHT);
-     for (var x = 0.5; x < board.WIDTH; x += 10) {
+  function Board() {
+    this.acceleration = { x: 0, y: 0 };
+  }
+  
+  Board.WIDTH = 320;
+  Board.HEIGHT = 460;
+  
+  Board.prototype.draw = function() {
+     context.clearRect(0, 0, Board.WIDTH, Board.HEIGHT);
+     for (var x = 0.5; x < Board.WIDTH; x += 10) {
          context.moveTo(x, 0);
-         context.lineTo(x, board.HEIGHT);
+         context.lineTo(x, Board.HEIGHT);
      }
-     for (var y = 0.5; y < board.HEIGHT; y += 10) {
+     for (var y = 0.5; y < Board.HEIGHT; y += 10) {
         context.moveTo(0, y);
-        context.lineTo(board.WIDTH, y);
+        context.lineTo(Board.WIDTH, y);
      }
      context.strokeStyle = "#eee";
      context.stroke();
-  };
+  }; 
 
-  var drawPiece = function(p) {
-     context.fillStyle = p.color;
-     context.beginPath();
-     context.arc(p.center.x, p.center.y, p.radius, 0, Math.PI * 2, false);
-     context.closePath();
-     context.fill();
-  };
-
-  var computeCenter = function(oldCenter, acceleration) {
-     var newCenter = {};
-
-     newCenter.x = oldCenter.x + 2 * acceleration.x;
-     newCenter.y = oldCenter.y - 2 * acceleration.y;
-     
-     // stay within canvas boundary
-     if (newCenter.x < piece.radius) {
-        newCenter.x = piece.radius;
-     }
-     if (newCenter.x > board.WIDTH - piece.radius) {
-        newCenter.x = board.HEIGHT - piece.radius;
-     }
-     if (newCenter.y < piece.radius) {
-        newCenter.y = piece.radius;
-     }
-     if (newCenter.y > board.HEIGHT - piece.radius) {
-        newCenter.y = board.HEIGHT - piece.radius;
-     }
-     return newCenter;
+  var board = new Board();
+  
+  /**************************************************************************
+  * BoardPiece 
+  **************************************************************************/
+  
+  function BoardPiece(sessionId) {
+    this.sessionId = sessionId;
+    this.center = { 
+      x: Board.WIDTH / 2,
+      y: 0
+    };
+    this.radius = 32;
+    this.acceleration = { x: 0, y: 0 };
+    this.color = '#000';
+  }
+  
+  BoardPiece.prototype.draw = function() {
+    context.save();
+      context.translate(this.center.x, this.center.y);
+      context.fillStyle = this.color;
+      context.beginPath();
+        context.arc(0, 0, this.radius, 0, Math.PI * 2, false);
+      context.closePath();
+      context.fill();
+    context.restore();
   };
   
+  BoardPiece.prototype.updatePosition = function() {
+    
+    // update center position
+
+    this.center.x += 10 * this.acceleration.x;
+    this.center.y -= 10 * this.acceleration.y;
+
+    // stay within canvas boundary
+    if (this.center.x < this.radius) {
+      this.center.x = this.radius;
+    }
+    if (this.center.x > Board.WIDTH - this.radius) {
+      this.center.x = Board.WIDTH - this.radius;
+    }
+    if (this.center.y < this.radius) {
+      this.center.y = this.radius;
+    }
+    if (this.center.y > Board.HEIGHT - this.radius) {
+      this.center.y = Board.HEIGHT - this.radius;
+    }
+  };
+
+  /**************************************************************************
+  * Device Moved 
+  **************************************************************************/
+
+  var deviceMotion = function(event) {
+    board.acceleration = event.accelerationIncludingGravity;
+  };
+  
+  setInterval(function() {
+    board.draw();
+    for (var i = 0; i < pieces.length; i++) {
+      var p = pieces[i];
+      p.acceleration = board.acceleration;
+      p.updatePosition();
+      p.draw();
+    }
+  }, 25);
+
   /**************************************************************************
   * init
   **************************************************************************/
@@ -110,6 +117,7 @@ var game = function() {
   }); 
   socket.on('message', function(message) { 
     console.log('message: ' + message);
+    pieces.push(new BoardPiece(message));
   }); 
   socket.on('disconnect', function() { 
     console.log('disconnected');
