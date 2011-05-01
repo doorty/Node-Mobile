@@ -1,10 +1,12 @@
 var game = function() { 
   
-  /**************************************************************************
-  * variables 
-  **************************************************************************/
-  var pieces = [];
+  var canvas = document.getElementById('canvas');
+  canvas.width = document.width;
+  canvas.height = document.height;
+  
+  var context = canvas.getContext('2d');
 
+  var pieces = [];
   
   /**************************************************************************
   * Board
@@ -14,8 +16,8 @@ var game = function() {
     this.acceleration = { x: 0, y: 0 };
   }
   
-  Board.WIDTH = 320;
-  Board.HEIGHT = 460;
+  Board.WIDTH = canvas.width;
+  Board.HEIGHT = canvas.height;
   
   Board.prototype.draw = function() {
      context.clearRect(0, 0, Board.WIDTH, Board.HEIGHT);
@@ -89,36 +91,42 @@ var game = function() {
     board.acceleration = event.accelerationIncludingGravity;
   };
   
-  setInterval(function() {
-    board.draw();
-    for (var i = 0; i < pieces.length; i++) {
-      var p = pieces[i];
-      p.acceleration = board.acceleration;
-      p.updatePosition();
-      p.draw();
-    }
-  }, 25);
-
-  /**************************************************************************
-  * init
-  **************************************************************************/
-  var canvas = document.getElementById('canvas');
-  var context = canvas.getContext('2d');
   window.addEventListener('devicemotion', deviceMotion, true);
+  
+  /**************************************************************************
+   * Refresh rate 
+   **************************************************************************/
+  
+  var refresh =  function() {
+     board.draw();
+     var i = pieces.length;
+     while ( i-- ) {
+       var p = pieces[i];
+       p.acceleration = board.acceleration;
+       p.updatePosition();
+       p.draw();
+     }
+   };
+  
+  setInterval(refresh, 33);
 
   /**************************************************************************
    * socket connection with server. 
    * iOS > 4.2 uses WebSocket, iOS < 4.2 uses long polling
    **************************************************************************/
   var socket = new io.Socket('10.0.1.2', { port: 3000 }); 
+  
   socket.connect();
+  
   socket.on('connect', function() { 
     console.log('connected');
   }); 
+  
   socket.on('message', function(message) { 
     console.log('message: ' + message);
     pieces.push(new BoardPiece(message));
   }); 
+  
   socket.on('disconnect', function() { 
     console.log('disconnected');
   });

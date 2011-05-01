@@ -41,8 +41,11 @@ server.listen(3000);
 var socket = io.listen(server);
 socket.on('connection', function(client) { 
 
-  // new client is here
+  // tell me what is my id
   client.send(client.sessionId);
+  
+  // tell everyone else my id
+  // client.broadcast(client.sessionId);
   
   client.on('message', function() { 
     
