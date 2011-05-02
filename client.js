@@ -1,5 +1,9 @@
 var game = function() { 
   
+  /**************************************************************************
+  * DOM
+  **************************************************************************/
+  
   var canvas = document.getElementById('canvas');
   canvas.width = document.width;
   canvas.height = document.height;
@@ -8,12 +12,44 @@ var game = function() {
 
   var pieces = [];
   
+  var my_piece;
+  
+  
+  /**************************************************************************
+  * Frames per second
+  **************************************************************************/
+  var Fps = function() {
+    this.lastTime = new Date().getTime();
+    this.actualFps = 0;
+    this.color = '#000'; // '#00FF00' lime green
+  }
+  
+  Fps.FPS = 60;  // 30 frames a second, theoretical 
+  Fps.MILLISEC_PER_FRAME = Math.round(1000 / Fps.FPS);
+  
+  Fps.prototype.update = function() {
+    var currentTime = new Date().getTime();
+    var timeDiff = currentTime - this.lastTime; // time in miliseconds
+    this.actualFps = Math.round(1000 / timeDiff);
+    this.lastTime = currentTime;
+  }
+  
+  Fps.prototype.draw = function() {
+    context.font = "bold 1em sans-serif";
+    context.textAlign = 'right';
+    context.textBaseline = 'bottom';
+    context.fillStyle = this.color;
+    context.fillText(this.actualFps + ' FPS', canvas.width - 5, canvas.height);
+  }
+  
+  var fps = new Fps();
+  
   /**************************************************************************
   * Board
   **************************************************************************/
 
-  function Board() {
-    this.acceleration = { x: 0, y: 0 };
+  var Board = function() {
+
   }
   
   Board.WIDTH = canvas.width;
@@ -39,7 +75,7 @@ var game = function() {
   * BoardPiece 
   **************************************************************************/
   
-  function BoardPiece(sessionId) {
+  var BoardPiece = function(sessionId) {
     this.sessionId = sessionId;
     this.center = { 
       x: Board.WIDTH / 2,
@@ -48,14 +84,15 @@ var game = function() {
     this.radius = 32;
     this.acceleration = { x: 0, y: 0 };
     this.color = '#000';
-  }
+  };
   
   BoardPiece.prototype.draw = function() {
     context.save();
-      context.translate(this.center.x, this.center.y);
+      //context.translate(this.center.x, this.center.y);
       context.fillStyle = this.color;
       context.beginPath();
-        context.arc(0, 0, this.radius, 0, Math.PI * 2, false);
+        context.arc(this.center.x, this.center.y, this.radius, 0, Math.PI * 2, false);
+        //context.arc(0, 0, this.radius, 0, Math.PI * 2, false);
       context.closePath();
       context.fill();
     context.restore();
@@ -88,28 +125,11 @@ var game = function() {
   **************************************************************************/
 
   var deviceMotion = function(event) {
-    board.acceleration = event.accelerationIncludingGravity;
+      my_piece.acceleration = event.accelerationIncludingGravity;
   };
   
-  window.addEventListener('devicemotion', deviceMotion, true);
+  // window.addEventListener('devicemotion', deviceMotion, true);
   
-  /**************************************************************************
-   * Refresh rate 
-   **************************************************************************/
-  
-  var refresh =  function() {
-     board.draw();
-     var i = pieces.length;
-     while ( i-- ) {
-       var p = pieces[i];
-       p.acceleration = board.acceleration;
-       p.updatePosition();
-       p.draw();
-     }
-   };
-  
-  setInterval(refresh, 33);
-
   /**************************************************************************
    * socket connection with server. 
    * iOS > 4.2 uses WebSocket, iOS < 4.2 uses long polling
@@ -119,17 +139,40 @@ var game = function() {
   socket.connect();
   
   socket.on('connect', function() { 
-    console.log('connected');
+    console.log('connected at ' + new Date());
   }); 
   
-  socket.on('message', function(message) { 
-    console.log('message: ' + message);
-    pieces.push(new BoardPiece(message));
+  socket.on('message', function(piece) { 
+    console.log('piece: ' + piece);
+    console.log('sessionId: ' + piece.id);
+    
+    if (my_piece === null || my_piece === undefined) {
+      my_piece = new BoardPiece(piece.id);
+      window.addEventListener('devicemotion', deviceMotion, true);
+    }
+
   }); 
   
   socket.on('disconnect', function() { 
     console.log('disconnected');
   });
+  
+  /**************************************************************************
+   * Refresh rate 
+   **************************************************************************/
+  
+  var frame =  function() {
+    board.draw();
+    if (my_piece) {
+      my_piece.updatePosition();
+      my_piece.draw();
+      //socket.send(my_piece);
+    }
+    fps.update();
+    fps.draw();
+   };
+  
+  setInterval(frame, Fps.MILLISEC_PER_FRAME); 
 
 };
 

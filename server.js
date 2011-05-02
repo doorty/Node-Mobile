@@ -36,22 +36,27 @@ function contentType(path) {
 
 server.listen(3000);
 
-
 // socket.io
 var socket = io.listen(server);
 socket.on('connection', function(client) { 
 
   // tell me what is my id
-  client.send(client.sessionId);
+   client.send( { id: client.sessionId } );
   
   // tell everyone else my id
-  // client.broadcast(client.sessionId);
+  // client.broadcast(piece);
   
-  client.on('message', function() { 
+  // tell everyone including myself
+  // socket.boradcast(piece);
+  
+  client.on('message', function(p) { 
+
+    client.broadcast(p);
     
   });
   
   client.on('disconnect', function() { 
     
   });
+  
 });
