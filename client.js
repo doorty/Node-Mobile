@@ -14,6 +14,22 @@ var game = function() {
   
   var my_piece;
   
+  /**************************************************************************
+  * Notification
+  **************************************************************************/
+  var Notification = function() {
+    this.color = '#666'; // '#00FF00' lime green
+  }
+
+  Notification.prototype.draw = function(message) {
+    context.font = "bold 1em sans-serif";
+    context.textAlign = 'left';
+    context.textBaseline = 'bottom';
+    context.fillStyle = this.color;
+    context.fillText(message, 5, canvas.height);
+  }
+  
+  var notification = new Notification();
   
   /**************************************************************************
   * Frames per second
@@ -88,11 +104,9 @@ var game = function() {
   
   BoardPiece.prototype.draw = function() {
     context.save();
-      //context.translate(this.center.x, this.center.y);
       context.fillStyle = this.color;
       context.beginPath();
         context.arc(this.center.x, this.center.y, this.radius, 0, Math.PI * 2, false);
-        //context.arc(0, 0, this.radius, 0, Math.PI * 2, false);
       context.closePath();
       context.fill();
     context.restore();
@@ -127,9 +141,7 @@ var game = function() {
   var deviceMotion = function(event) {
       my_piece.acceleration = event.accelerationIncludingGravity;
   };
-  
-  // window.addEventListener('devicemotion', deviceMotion, true);
-  
+
   /**************************************************************************
    * socket connection with server. 
    * iOS > 4.2 uses WebSocket, iOS < 4.2 uses long polling
@@ -150,6 +162,9 @@ var game = function() {
       my_piece = new BoardPiece(piece.id);
       window.addEventListener('devicemotion', deviceMotion, true);
     }
+    else {
+      notification.draw('Piece ' + piece.sessionId + ' updated their location to x, y = ' + piece.center.x + ', ' +  piece.center.y);
+    }
 
   }); 
   
@@ -166,7 +181,12 @@ var game = function() {
     if (my_piece) {
       my_piece.updatePosition();
       my_piece.draw();
-      //socket.send(my_piece);
+      socket.send({
+        id: my_piece.sessionId,
+        center: my_piece.center,
+        radius: my_piece.radius,
+        color: my_piece.color
+      });
     }
     fps.update();
     fps.draw();
