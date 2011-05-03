@@ -154,16 +154,18 @@ var game = function() {
     console.log('connected at ' + new Date());
   }); 
   
-  socket.on('message', function(piece) { 
-    console.log('piece: ' + piece);
-    console.log('sessionId: ' + piece.id);
+  socket.on('message', function(json) { 
+    console.log('json: ' + json);
     
     if (my_piece === null || my_piece === undefined) {
-      my_piece = new BoardPiece(piece.id);
+      my_piece = new BoardPiece(json.sessionId);
       window.addEventListener('devicemotion', deviceMotion, true);
     }
     else {
-      notification.draw('Piece ' + piece.sessionId + ' updated their location to x, y = ' + piece.center.x + ', ' +  piece.center.y);
+      var piece = JSON.parse(json); // convert json to object
+      piece.__proto__ = BoardPiece.prototype; // provide access to BoardPiece's draw()
+      pieces.push(piece);
+      //notification.draw('Piece ' + piece.sessionId + ' updated their location to x, y = ' + piece.center.x + ', ' +  piece.center.y);
     }
 
   }); 
@@ -181,12 +183,12 @@ var game = function() {
     if (my_piece) {
       my_piece.updatePosition();
       my_piece.draw();
-      socket.send({
-        id: my_piece.sessionId,
-        center: my_piece.center,
-        radius: my_piece.radius,
-        color: my_piece.color
-      });
+      socket.send(JSON.stringify(my_piece)); // convert object to json
+    }
+    var i = pieces.length;
+    while (i--) {
+      var p = pieces.pop();
+      p.draw();
     }
     fps.update();
     fps.draw();

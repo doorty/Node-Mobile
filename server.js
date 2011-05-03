@@ -41,7 +41,7 @@ var socket = io.listen(server);
 socket.on('connection', function(client) { 
 
   // tell me what is my id
-   client.send( { id: client.sessionId } );
+   client.send( { sessionId: client.sessionId } );
   
   // tell everyone else my id
   // client.broadcast(piece);
