@@ -102,6 +102,32 @@ var game = function() {
     this.color = '#000';
   };
   
+  BoardPiece.Create = function(data) {
+    var piece = new BoardPiece();
+    
+    piece.sessionId = data.sessionId;
+    piece.center = data.center;
+    piece.radius = data.radius;
+    piece.acceleration = data.acceleration;
+    piece.color = data.color;
+    
+    return piece;
+  };
+  
+  // this method is called by JSON.stringify
+  // as explained here: http://json.org/js.html
+  BoardPiece.prototype.toJSON = function () {
+    var data = {};
+    
+    data.sessionId = this.sessionId;
+    data.center = this.center;
+    data.radius = this.radius;
+    data.acceleration = this.acceleration;
+    data.color = this.color;
+    
+    return data;
+  };
+  
   BoardPiece.prototype.draw = function() {
     context.save();
       context.fillStyle = this.color;
@@ -162,13 +188,12 @@ var game = function() {
       window.addEventListener('devicemotion', deviceMotion, true);
     }
     else {
-      var piece = JSON.parse(json); // convert json to object
-      piece.__proto__ = BoardPiece.prototype; // provide access to BoardPiece's draw()
+      var piece = BoardPiece.Create(JSON.parse(json)); // convert json to object
       pieces.push(piece);
       //notification.draw('Piece ' + piece.sessionId + ' updated their location to x, y = ' + piece.center.x + ', ' +  piece.center.y);
     }
 
-  }); 
+  });
   
   socket.on('disconnect', function() { 
     console.log('disconnected');
